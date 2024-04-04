@@ -11,40 +11,34 @@ using Bam.Net;
 using Bam.Net.Logging;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Bam.Net.Server;
 
 namespace Bam.Server
 {
     public class HttpServer : IDisposable
     {
-        private static ConcurrentDictionary<HostPrefix, HttpServer> _listening = new ConcurrentDictionary<HostPrefix, HttpServer>();
+        private static readonly ConcurrentDictionary<HostBinding, HttpServer> _listening = new ConcurrentDictionary<HostBinding, HttpServer>();
         private readonly HttpListener _listener;
         private readonly Thread _handlerThread;
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
-        public HttpServer(Action<HttpListenerContext> handler, ILogger? logger = null)
+        public HttpServer(Action<HttpListenerContext> requestHandler, ILogger? logger = null)
         {
             _logger = logger ?? Log.Default;
 
             _listener = new HttpListener();
-            _handlerThread = new Thread(HandleRequests);
+            _handlerThread = new Thread(HandleHttpListenerContextRequests);
 
-            _hostPrefixes = new HashSet<HostPrefix>();
+            _hostPrefixes = new HashSet<HostBinding>();
 
-
-            ProcessRequest = handler;
+            ProcessHttpContextListenerRequest = requestHandler;
         }
 
-        HashSet<HostPrefix> _hostPrefixes;
-        public HostPrefix[] HostPrefixes
+        HashSet<HostBinding> _hostPrefixes;
+        public HostBinding[] HostPrefixes
         {
-            get
-            {
-                return _hostPrefixes.ToArray();
-            }
-            set
-            {
-                _hostPrefixes = new HashSet<HostPrefix>(value);
-            }
+            get => _hostPrefixes.ToArray();
+            set => _hostPrefixes = new HashSet<HostBinding>(value);
         }
 
         /// <summary>
@@ -63,13 +57,13 @@ namespace Bam.Server
             Start(HostPrefixes);
         }
 
-        public void Start(params HostPrefix[] hostPrefixes)
+        public void Start(params HostBinding[] hostPrefixes)
         {
             Start(Usurped, hostPrefixes);
         }
 
         static object _startLock = new object();
-        public void Start(bool usurped, params HostPrefix[] hostPrefixes)
+        public void Start(bool usurped, params HostBinding[] hostPrefixes)
         {
             if (hostPrefixes.Length == 0)
             {
@@ -81,13 +75,13 @@ namespace Bam.Server
                 {
                     if (!_listening.ContainsKey(hp))
                     {
-                        AddHostPrefix(hp);
+                        AddHostBinding(hp);
                     }
                     else if (usurped && _listening.ContainsKey(hp))
                     {
                         _listening[hp].Stop();
                         _listening.TryRemove(hp, out _);
-                        AddHostPrefix(hp);
+                        AddHostBinding(hp);
                     }
                     else
                     {
@@ -100,7 +94,7 @@ namespace Bam.Server
             }
         }
 
-        private void AddHostPrefix(HostPrefix hp)
+        private void AddHostBinding(HostBinding hp)
         {
             _listening.TryAdd(hp, this);
             string path = hp.ToString();
@@ -116,6 +110,8 @@ namespace Bam.Server
 
         public bool IsDisposed { get; private set; }
 
+        public bool IsListening => _listener.IsListening;
+
         public void Stop()
         {
             try
@@ -128,7 +124,7 @@ namespace Bam.Server
                 _logger.AddEntry("Error stopping HttpServer: {0}", ex, ex.Message);
             }
 
-            foreach (HostPrefix hp in _listening.Keys)
+            foreach (HostBinding hp in _listening.Keys)
             {
                 try
                 {
@@ -154,19 +150,19 @@ namespace Bam.Server
             catch { }
         }
 
-        private void HandleRequests()
+        private void HandleHttpListenerContextRequests()
         {
             while (_listener != null && _listener.IsListening)
             {
                 try
                 {
                     HttpListenerContext context = _listener.GetContext();
-                    Task.Run(() => ProcessRequest(context));
+                    Task.Run(() => ProcessHttpContextListenerRequest(context));
                 }
                 catch { }
             }
         }
 
-        public Action<HttpListenerContext> ProcessRequest;
+        public Action<HttpListenerContext> ProcessHttpContextListenerRequest;
     }
 }
