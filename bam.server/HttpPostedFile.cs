@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using Bam.Net.ServiceProxy;
+using Bam.ServiceProxy;
 using System.Linq;
 using System.Linq.Expressions;
-using Bam.Net;
+using Bam;
 
 namespace Bam.Server
 {

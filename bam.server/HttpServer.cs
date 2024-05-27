@@ -7,11 +7,11 @@ using System.Linq;
 using System.Text;
 using System.Net;
 using System.Threading;
-using Bam.Net;
-using Bam.Net.Logging;
+using Bam;
+using Bam.Logging;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
-using Bam.Net.Server;
+using Bam.Server;
 
 namespace Bam.Server
 {
