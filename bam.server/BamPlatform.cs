@@ -1,11 +1,10 @@
-﻿using Bam.Net.Analytics;
-using Bam.Net.Server;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Bam.Protocol.Server;
+using Bam.Server;
 
 namespace Bam.Net
 {
@@ -47,7 +46,11 @@ namespace Bam.Net
         /// <returns></returns>
         public static async Task<BamServer> CreateNamedServerAsync(string name)
         {
-            return await CreateServerAsync(new ManagedServerHostBinding(name));
+            BamServerOptions options = new BamServerOptions();
+            options.HostBindings.Clear();
+            options.UseNameBasedPort = true;
+            options.HostBindings.Add(new ManagedServerHostBinding(name));
+            return await CreateServerAsync(options);
         }
 
         /// <summary>
@@ -66,7 +69,11 @@ namespace Bam.Net
         /// <returns></returns>
         public static async Task<BamServer> CreateServerAsync(int port)
         {
-            return await CreateServerAsync(new HostBinding(port));
+            BamServerOptions options = new BamServerOptions();
+            options.HostBindings.Clear();
+            options.TcpPort = port;
+            options.HostBindings.Add(new HostBinding(port));
+            return await CreateServerAsync(options);
         }
 
         /// <summary>

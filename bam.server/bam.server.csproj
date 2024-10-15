@@ -12,8 +12,4 @@
     <ProjectReference Include="..\..\bam.protocol\bam.protocol\bam.protocol.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="BamPlatform.cs" />
-  </ItemGroup>
-
 </Project>
