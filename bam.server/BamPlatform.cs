@@ -47,9 +47,8 @@ namespace Bam.Net
         public static async Task<BamServer> CreateNamedServerAsync(string name)
         {
             BamServerOptions options = new BamServerOptions();
-            options.HostBindings.Clear();
             options.UseNameBasedPort = true;
-            options.HostBindings.Add(new ManagedServerHostBinding(name));
+            options.HttpHostBinding = new ManagedServerHostBinding(name);
             return await CreateServerAsync(options);
         }
 
@@ -70,9 +69,8 @@ namespace Bam.Net
         public static async Task<BamServer> CreateServerAsync(int port)
         {
             BamServerOptions options = new BamServerOptions();
-            options.HostBindings.Clear();
             options.TcpPort = port;
-            options.HostBindings.Add(new HostBinding(port));
+            options.HttpHostBinding = new HostBinding(port);
             return await CreateServerAsync(options);
         }
 
