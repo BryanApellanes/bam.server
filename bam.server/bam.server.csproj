@@ -12,4 +12,8 @@
     <ProjectReference Include="..\..\bam.protocol\bam.protocol\bam.protocol.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Streaming\" />
+  </ItemGroup>
+
 </Project>
