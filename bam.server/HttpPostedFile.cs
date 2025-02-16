@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
+﻿using System.Text;
 using Bam.ServiceProxy;
-using System.Linq;
-using System.Linq.Expressions;
-using Bam;
 
 namespace Bam.Server
 {

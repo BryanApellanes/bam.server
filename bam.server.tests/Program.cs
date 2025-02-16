@@ -1,6 +1,5 @@
-﻿using System;
-using Bam.Console;
-using Bam;
+﻿using Bam.Console;
+
 [Serializable]
 class Program 
 {
