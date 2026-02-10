@@ -1,5 +1,6 @@
 ﻿using Bam.Protocol.Server;
 using Bam.Server;
+using Microsoft.AspNetCore.Builder;
 
 namespace Bam.Net
 {
@@ -10,6 +11,7 @@ namespace Bam.Net
             AppDomain.CurrentDomain.DomainUnload += async (o, a) => await StopServersAsync();
             Servers = new HashSet<IManagedServer>();
         }
+
 
         public static HashSet<IManagedServer> Servers { get; }
 
@@ -82,6 +84,18 @@ namespace Bam.Net
                 Servers.Add(bamAppServer);
                 return bamAppServer;
             });
+        }
+
+        public static async Task<WebApplicationManagedServer> CreateWebApplicationServerAsync(string name)
+        {
+            int port = GetUnprivilegedPortForName(name);
+            return await CreateWebApplicationServerAsync(name, port);
+        }
+
+        public static async Task<WebApplicationManagedServer> CreateWebApplicationServerAsync(string name, int port)
+        {
+            return await CreateManagedServerAsync(() =>
+                new WebApplicationManagedServer(name, new HostBinding(port)));
         }
 
         public static async Task StopServersAsync()
