@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\bam.console\bam.console\bam.console.csproj" />
+      <ProjectReference Include="..\..\bam.test\bam.test\bam.test.csproj" />
       <ProjectReference Include="..\bam.server\bam.server.csproj" />
     </ItemGroup>
 
