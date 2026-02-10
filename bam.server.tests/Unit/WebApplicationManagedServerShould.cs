@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Bam.Console;
 using Bam.Net;
 using Bam.Server;
 using Bam.Test;
@@ -10,7 +11,13 @@ namespace Bam.Server.Tests.Unit;
 public class WebApplicationManagedServerShould : UnitTestMenuContainer
 {
     [UnitTest]
-    public async Task StartAndRespondToHttpRequest()
+    [ConsoleCommand("Start And Respond To Http Request", "Start server, make HTTP request, verify JSON echo")]
+    public void StartAndRespondToHttpRequest()
+    {
+        StartAndRespondToHttpRequestAsync().GetAwaiter().GetResult();
+    }
+
+    private async Task StartAndRespondToHttpRequestAsync()
     {
         int port = RandomNumber.Between(10000, 60000);
         var server = new WebApplicationManagedServer("test-server", new HostBinding(port));
@@ -71,7 +78,13 @@ public class WebApplicationManagedServerShould : UnitTestMenuContainer
     }
 
     [UnitTest]
-    public async Task BeCreatedViaFactoryMethod()
+    [ConsoleCommand("Be Created Via Factory Method", "Create server via BamPlatform factory and verify registration")]
+    public void BeCreatedViaFactoryMethod()
+    {
+        BeCreatedViaFactoryMethodAsync().GetAwaiter().GetResult();
+    }
+
+    private async Task BeCreatedViaFactoryMethodAsync()
     {
         WebApplicationManagedServer server = await BamPlatform.CreateWebApplicationServerAsync("factory-test", 0);
 
@@ -81,7 +94,13 @@ public class WebApplicationManagedServerShould : UnitTestMenuContainer
     }
 
     [UnitTest]
-    public async Task StopCleanly()
+    [ConsoleCommand("Stop Cleanly", "Start and stop server, verify events and port release")]
+    public void StopCleanly()
+    {
+        StopCleanlyAsync().GetAwaiter().GetResult();
+    }
+
+    private async Task StopCleanlyAsync()
     {
         int port = RandomNumber.Between(10000, 60000);
         var server = new WebApplicationManagedServer("stop-test", new HostBinding(port));
