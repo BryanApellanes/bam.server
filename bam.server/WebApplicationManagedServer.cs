@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Bam.Configuration;
 using Bam.Logging;
 using Bam.Protocol;
 using Bam.Protocol.Server;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Bam.Server;
 
-public class WebApplicationManagedServer : Loggable, IAsyncManagedServer
+public class WebApplicationManagedServer : Loggable, IAsyncManagedServer, IConfigurable, IDisposable
 {
     private WebApplication? _app;
     private Task? _runTask;
@@ -28,6 +29,7 @@ public class WebApplicationManagedServer : Loggable, IAsyncManagedServer
         Options = options;
         ServerName = options.ServerName;
         HttpHostBinding = options.HttpHostBinding;
+        Options.SubscribeEventHandlers(this);
     }
 
     protected BamServerOptions? Options { get; private set; }
@@ -159,6 +161,25 @@ public class WebApplicationManagedServer : Loggable, IAsyncManagedServer
     public Task TryStopAsync()
     {
         return Task.Run(TryStop);
+    }
+
+    public void Dispose()
+    {
+        TryStop();
+    }
+
+    public string[] RequiredProperties => Array.Empty<string>();
+
+    public void Configure(IConfigurer configurer)
+    {
+        configurer.Configure(this);
+        this.CheckRequiredProperties();
+    }
+
+    public void Configure(object configuration)
+    {
+        this.CopyProperties(configuration);
+        this.CheckRequiredProperties();
     }
 
     private async Task HandleRequestAsync(HttpContext httpContext)
