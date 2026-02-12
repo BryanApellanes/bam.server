@@ -8,31 +8,23 @@ using Microsoft.AspNetCore.Http;
 
 namespace Bam.Server;
 
-public class WebApplicationManagedServer : Loggable, IAsyncManagedServer, IConfigurable, IDisposable
+public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigurable, IDisposable
 {
     private WebApplication? _app;
     private Task? _runTask;
     private CancellationTokenSource? _cts;
+    private readonly BamRequestPipeline _pipeline;
 
-    public WebApplicationManagedServer()
-    {
-    }
-
-    public WebApplicationManagedServer(string serverName, HostBinding hostBinding)
-    {
-        ServerName = serverName;
-        HttpHostBinding = hostBinding;
-    }
-
-    public WebApplicationManagedServer(BamServerOptions options)
+    public WebApplicationBamServer(BamServerOptions options)
     {
         Options = options;
         ServerName = options.ServerName;
         HttpHostBinding = options.HttpHostBinding;
         Options.SubscribeEventHandlers(this);
+        _pipeline = new BamRequestPipeline(options);
     }
 
-    protected BamServerOptions? Options { get; private set; }
+    protected BamServerOptions Options { get; private set; }
 
     public string ServerName { get; private set; }
     public HostBinding HttpHostBinding { get; private set; }
@@ -40,16 +32,16 @@ public class WebApplicationManagedServer : Loggable, IAsyncManagedServer, IConfi
 
     public string LastExceptionMessage { get; set; }
 
-    [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "BamHttpServer={ServerName};Port={Port};Starting")]
+    [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "WebApplicationBamServer={ServerName};Port={Port};Starting")]
     public event EventHandler<BamServerEventArgs> Starting;
 
-    [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "BamHttpServer={ServerName};Port={Port};Started")]
+    [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "WebApplicationBamServer={ServerName};Port={Port};Started")]
     public event EventHandler<BamServerEventArgs> Started;
 
-    [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "BamHttpServer={ServerName};Port={Port};Stopping")]
+    [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "WebApplicationBamServer={ServerName};Port={Port};Stopping")]
     public event EventHandler<BamServerEventArgs> Stopping;
 
-    [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "BamHttpServer={ServerName};Port={Port};Stopped")]
+    [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "WebApplicationBamServer={ServerName};Port={Port};Stopped")]
     public event EventHandler<BamServerEventArgs> Stopped;
 
     [Verbosity(LogEventType.Error, SenderMessageFormat = "LastMessage: {LastExceptionMessage}")]
@@ -196,40 +188,15 @@ public class WebApplicationManagedServer : Loggable, IAsyncManagedServer, IConfi
 
             var serverContext = new AspNetCoreBamServerContext(requestId, bamRequest)
             {
-                RequestType = RequestType.Http
+                RequestType = RequestType.Http,
+                OutputStream = httpContext.Response.Body
             };
             FireEvent(CreateContextComplete, new BamServerEventArgs(serverContext));
 
-            if (Options == null)
-            {
-                // No pipeline configured — echo request info (original behavior)
-                FireEvent(InitializeContextStarted, new BamServerEventArgs(serverContext));
-                FireEvent(InitializeContextComplete, new BamServerEventArgs(serverContext));
-
-                httpContext.Response.ContentType = "application/json";
-                var responseBody = new
-                {
-                    serverName = ServerName,
-                    requestId,
-                    method = bamRequest.HttpMethod.ToString(),
-                    url = bamRequest.Url.ToString(),
-                    headers = bamRequest.Headers,
-                    queryString = bamRequest.QueryString,
-                    timestamp = DateTimeOffset.UtcNow
-                };
-                await httpContext.Response.WriteAsync(JsonSerializer.Serialize(responseBody));
-                return;
-            }
-
             // Run initialization pipeline
             FireEvent(InitializeContextStarted, new BamServerEventArgs(serverContext));
-            var initialization = new HttpBamServerInitializationContext
-            {
-                ServerContext = serverContext,
-                EventArgs = new BamServerEventArgs(serverContext)
-            };
-            IBamServerContextInitializer initializer = Options.GetServerContextInitializer();
-            initializer.InitializeServerContext(initialization);
+            BamServerEventArgs args = new BamServerEventArgs(serverContext);
+            BamServerInitializationContext initialization = _pipeline.RunPipeline(serverContext, args);
             FireEvent(InitializeContextComplete, new BamServerEventArgs(serverContext));
 
             // Handle response
@@ -277,7 +244,7 @@ public class WebApplicationManagedServer : Loggable, IAsyncManagedServer, IConfi
 
         if (initialization.Status == InitializationStatus.Success)
         {
-            ICommunicationHandler? handler = Options!.GetCommunicationHandler();
+            ICommunicationHandler? handler = Options.GetCommunicationHandler();
             object result = handler!.RequestProcessor!.ProcessRequestContext(serverContext);
             IObjectEncoderDecoder? encoder = handler.ObjectEncoderDecoder;
             httpContext.Response.StatusCode = 200;
@@ -286,27 +253,13 @@ public class WebApplicationManagedServer : Loggable, IAsyncManagedServer, IConfi
         }
 
         // Initialization failed — return failure info
-        httpContext.Response.StatusCode = GetStatusCode(initialization.Status);
+        httpContext.Response.StatusCode = DefaultBamResponseProvider.GetStatusCode(initialization.Status);
         var failure = new InitializationFailure
         {
             Status = initialization.Status,
             Message = initialization.Message
         };
-        ICommunicationHandler? failHandler = Options!.GetCommunicationHandler();
+        ICommunicationHandler? failHandler = Options.GetCommunicationHandler();
         await httpContext.Response.WriteAsync(failHandler!.ObjectEncoderDecoder!.Stringify(failure));
-    }
-
-    private static int GetStatusCode(InitializationStatus status)
-    {
-        return status switch
-        {
-            InitializationStatus.SessionInitializationFailed => 419,
-            InitializationStatus.SessionRequired => 420,
-            InitializationStatus.ActorResolutionFailed => 460,
-            InitializationStatus.CommandResolutionFailed => 461,
-            InitializationStatus.AuthorizationCalculationFailed => 462,
-            InitializationStatus.Success => 200,
-            _ => 500
-        };
     }
 }

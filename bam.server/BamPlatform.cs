@@ -86,16 +86,19 @@ namespace Bam.Net
             });
         }
 
-        public static async Task<WebApplicationManagedServer> CreateWebApplicationServerAsync(string name)
+        public static async Task<WebApplicationBamServer> CreateWebApplicationServerAsync(string name)
         {
             int port = GetUnprivilegedPortForName(name);
             return await CreateWebApplicationServerAsync(name, port);
         }
 
-        public static async Task<WebApplicationManagedServer> CreateWebApplicationServerAsync(string name, int port)
+        public static async Task<WebApplicationBamServer> CreateWebApplicationServerAsync(string name, int port)
         {
+            BamServerOptions options = new BamServerOptions();
+            options.ServerName = name;
+            options.HttpHostBinding = new HostBinding(port);
             return await CreateManagedServerAsync(() =>
-                new WebApplicationManagedServer(name, new HostBinding(port)));
+                new WebApplicationBamServer(options));
         }
 
         public static async Task StopServersAsync()

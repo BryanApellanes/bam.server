@@ -17,8 +17,10 @@ public class AspNetCoreBamServerContext : IBamServerContext
     public string RequestId { get; }
     public IBamRequest BamRequest { get; }
     public IBamResponse BamResponse { get; set; }
+    public Stream? OutputStream { get; set; }
     public IServerSessionState ServerSessionState { get; private set; }
     public IActor Actor { get; private set; }
+    public BamAuthentication Authentication { get; private set; }
     public ICommand Command { get; private set; }
     public IAuthorizationCalculation AuthorizationCalculation { get; private set; }
 
@@ -32,6 +34,12 @@ public class AspNetCoreBamServerContext : IBamServerContext
     {
         Actor = actor;
         return actor != null;
+    }
+
+    public bool SetAuthentication(BamAuthentication authentication)
+    {
+        Authentication = authentication;
+        return authentication?.Success == true;
     }
 
     public bool SetCommand(ICommand command)
