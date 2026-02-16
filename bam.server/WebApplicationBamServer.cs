@@ -8,6 +8,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace Bam.Server;
 
+/// <summary>
+/// A BAM server implementation backed by ASP.NET Core's <see cref="WebApplication"/>.
+/// Handles HTTP request routing through the BAM request pipeline and supports async start/stop lifecycle.
+/// </summary>
 public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigurable, IDisposable
 {
     private WebApplication? _app;
@@ -15,6 +19,10 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
     private CancellationTokenSource? _cts;
     private readonly BamRequestPipeline _pipeline;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WebApplicationBamServer"/> class with the specified options.
+    /// </summary>
+    /// <param name="options">The server options including host binding, server name, and event handlers.</param>
     public WebApplicationBamServer(BamServerOptions options)
     {
         Options = options;
@@ -26,10 +34,24 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
 
     protected BamServerOptions Options { get; private set; }
 
+    /// <summary>
+    /// Gets the logical name of this server instance.
+    /// </summary>
     public string ServerName { get; private set; }
+
+    /// <summary>
+    /// Gets the host binding (host and port) that this server listens on.
+    /// </summary>
     public HostBinding HttpHostBinding { get; private set; }
+
+    /// <summary>
+    /// Gets the port number from the HTTP host binding, or 0 if not set.
+    /// </summary>
     public int Port => HttpHostBinding?.Port ?? 0;
 
+    /// <summary>
+    /// Gets or sets the message from the most recent exception.
+    /// </summary>
     public string LastExceptionMessage { get; set; }
 
     [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "WebApplicationBamServer={ServerName};Port={Port};Starting")]
@@ -68,6 +90,9 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
     public event EventHandler<BamServerEventArgs> InitializeContextStarted;
     public event EventHandler<BamServerEventArgs> InitializeContextComplete;
 
+    /// <summary>
+    /// Starts the web application server, binding to the configured host and port and beginning to accept requests.
+    /// </summary>
     public void Start()
     {
         try
@@ -98,11 +123,18 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
         }
     }
 
+    /// <summary>
+    /// Starts the server asynchronously on a background thread.
+    /// </summary>
+    /// <returns>A task representing the asynchronous start operation.</returns>
     public Task StartAsync()
     {
         return Task.Run(Start);
     }
 
+    /// <summary>
+    /// Stops the web application server and releases associated resources.
+    /// </summary>
     public void Stop()
     {
         FireEvent(Stopping);
@@ -133,11 +165,18 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
         FireEvent(Stopped);
     }
 
+    /// <summary>
+    /// Stops the server asynchronously on a background thread.
+    /// </summary>
+    /// <returns>A task representing the asynchronous stop operation.</returns>
     public Task StopAsync()
     {
         return Task.Run(Stop);
     }
 
+    /// <summary>
+    /// Attempts to stop the server, swallowing any exceptions that occur during shutdown.
+    /// </summary>
     public void TryStop()
     {
         try
@@ -150,24 +189,42 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
         }
     }
 
+    /// <summary>
+    /// Attempts to stop the server asynchronously, swallowing any exceptions that occur during shutdown.
+    /// </summary>
+    /// <returns>A task representing the asynchronous stop attempt.</returns>
     public Task TryStopAsync()
     {
         return Task.Run(TryStop);
     }
 
+    /// <summary>
+    /// Disposes the server by attempting to stop it.
+    /// </summary>
     public void Dispose()
     {
         TryStop();
     }
 
+    /// <summary>
+    /// Gets the names of properties required for configuration. Returns an empty array.
+    /// </summary>
     public string[] RequiredProperties => Array.Empty<string>();
 
+    /// <summary>
+    /// Configures this server using the specified configurer.
+    /// </summary>
+    /// <param name="configurer">The configurer to apply.</param>
     public void Configure(IConfigurer configurer)
     {
         configurer.Configure(this);
         this.CheckRequiredProperties();
     }
 
+    /// <summary>
+    /// Configures this server by copying properties from the specified configuration object.
+    /// </summary>
+    /// <param name="configuration">The configuration object whose properties are copied to this instance.</param>
     public void Configure(object configuration)
     {
         this.CopyProperties(configuration);

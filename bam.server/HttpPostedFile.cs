@@ -4,10 +4,17 @@ using Bam.ServiceProxy;
 namespace Bam.Server
 {
     /// <summary>
-    /// Modified from http://stackoverflow.com/questions/8466703/httplistener-and-file-upload
+    /// Represents a file posted via an HTTP multipart form upload. Parses multipart boundary-delimited content
+    /// to extract file data and metadata.
     /// </summary>
     public class HttpPostedFile
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HttpPostedFile"/> class with the specified encoding, boundary, and input stream.
+        /// </summary>
+        /// <param name="encoding">The encoding used to interpret the multipart content.</param>
+        /// <param name="boundary">The multipart boundary string.</param>
+        /// <param name="input">The input stream containing the multipart data.</param>
         public HttpPostedFile(Encoding encoding, string boundary, Stream input)
         {
             Encoding = encoding;
@@ -16,6 +23,11 @@ namespace Bam.Server
             QueryString = new Dictionary<string, string>();
         }
 
+        /// <summary>
+        /// Creates an <see cref="HttpPostedFile"/> from the specified request, extracting the boundary and query string parameters.
+        /// </summary>
+        /// <param name="request">The HTTP request containing the multipart upload.</param>
+        /// <returns>A new <see cref="HttpPostedFile"/> populated with data from the request.</returns>
         public static HttpPostedFile FromRequest(IRequest request)
         {
             HttpPostedFile file = new HttpPostedFile(request.ContentEncoding, GetBoundary(request), request.InputStream);
@@ -31,35 +43,60 @@ namespace Bam.Server
             return "--" + request.ContentType.Split(';')[1].Split('=')[1];
         }
 
+        /// <summary>
+        /// Gets the query string parameters from the original request.
+        /// </summary>
         public Dictionary<string, string> QueryString
         {
             get;
             private set;
         }
 
+        /// <summary>
+        /// Gets the temporary file path where the uploaded file content was saved.
+        /// </summary>
         public string TempPath
         {
             get;
             private set;
         }
+
+        /// <summary>
+        /// Gets or sets the full file path of the uploaded file.
+        /// </summary>
         public string FullPath
         {
             get;
             internal set;
         }
+
+        /// <summary>
+        /// Gets or sets the original file name from the multipart content disposition.
+        /// </summary>
         public string FileName
         {
             get; set;
         }
+
+        /// <summary>
+        /// Gets or sets the name of the form input field that submitted the file.
+        /// </summary>
         public string FormInputName
         {
             get; set;
         }
+
+        /// <summary>
+        /// Gets or sets the MIME content type of the uploaded file.
+        /// </summary>
         public string ContentType
         {
             get; set;
         }
 
+        /// <summary>
+        /// Reads the content disposition metadata (form input name, file name, and content type) from the input stream.
+        /// </summary>
         public void ReadMeta()
         {
             MemoryStream copy = CopyInputStream();
