@@ -52,43 +52,45 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
     /// <summary>
     /// Gets or sets the message from the most recent exception.
     /// </summary>
-    public string LastExceptionMessage { get; set; }
+    public string LastExceptionMessage { get; set; } = null!;
 
     [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "WebApplicationBamServer={ServerName};Port={Port};Starting")]
-    public event EventHandler<BamServerEventArgs> Starting;
+    public event EventHandler<BamServerEventArgs>? Starting;
 
     [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "WebApplicationBamServer={ServerName};Port={Port};Started")]
-    public event EventHandler<BamServerEventArgs> Started;
+    public event EventHandler<BamServerEventArgs>? Started;
 
     [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "WebApplicationBamServer={ServerName};Port={Port};Stopping")]
-    public event EventHandler<BamServerEventArgs> Stopping;
+    public event EventHandler<BamServerEventArgs>? Stopping;
 
     [Verbosity(VerbosityLevel.Information, SenderMessageFormat = "WebApplicationBamServer={ServerName};Port={Port};Stopped")]
-    public event EventHandler<BamServerEventArgs> Stopped;
+    public event EventHandler<BamServerEventArgs>? Stopped;
 
     [Verbosity(LogEventType.Error, SenderMessageFormat = "LastMessage: {LastExceptionMessage}")]
-    public event EventHandler StartExceptionThrown;
+    public event EventHandler? StartExceptionThrown;
 
     [Verbosity(LogEventType.Error, SenderMessageFormat = "LastMessage: {LastExceptionMessage}")]
-    public event EventHandler RequestExceptionThrown;
+    public event EventHandler? RequestExceptionThrown;
 
     [Verbosity(LogEventType.Error, SenderMessageFormat = "LastMessage: {LastExceptionMessage}")]
-    public event EventHandler ServerStartException;
+    public event EventHandler? ServerStartException;
 
-    public event EventHandler HttpRequestReceived;
+    public event EventHandler? HttpRequestReceived;
 
     [Verbosity(LogEventType.Information,
         SenderMessageFormat =
             "Client Connected: LocalEndpoint={LocalEndpoint}, RemoteEndpoint={RemoteEndpoint}")]
-    public event EventHandler<BamServerEventArgs> TcpClientConnected;
+#pragma warning disable CS0067 // Event is never used
+    public event EventHandler<BamServerEventArgs>? TcpClientConnected;
 
-    public event EventHandler<BamServerEventArgs> UdpDataReceived;
+    public event EventHandler<BamServerEventArgs>? UdpDataReceived;
+#pragma warning restore CS0067
 
-    public event EventHandler<BamServerEventArgs> CreateContextStarted;
-    public event EventHandler<BamServerEventArgs> CreateContextComplete;
+    public event EventHandler<BamServerEventArgs>? CreateContextStarted;
+    public event EventHandler<BamServerEventArgs>? CreateContextComplete;
 
-    public event EventHandler<BamServerEventArgs> InitializeContextStarted;
-    public event EventHandler<BamServerEventArgs> InitializeContextComplete;
+    public event EventHandler<BamServerEventArgs>? InitializeContextStarted;
+    public event EventHandler<BamServerEventArgs>? InitializeContextComplete;
 
     /// <summary>
     /// Starts the web application server, binding to the configured host and port and beginning to accept requests.
@@ -97,7 +99,7 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
     {
         try
         {
-            FireEvent(Starting);
+            FireEvent(Starting!);
 
             try
             {
@@ -111,15 +113,15 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
             catch (Exception ex)
             {
                 LastExceptionMessage = ex.Message;
-                FireEvent(StartExceptionThrown, new ErrorEventArgs(ex));
+                FireEvent(StartExceptionThrown!, new ErrorEventArgs(ex));
             }
 
-            FireEvent(Started);
+            FireEvent(Started!);
         }
         catch (Exception ex)
         {
             LastExceptionMessage = ex.Message;
-            FireEvent(ServerStartException, new ErrorEventArgs(ex));
+            FireEvent(ServerStartException!, new ErrorEventArgs(ex));
         }
     }
 
@@ -137,7 +139,7 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
     /// </summary>
     public void Stop()
     {
-        FireEvent(Stopping);
+        FireEvent(Stopping!);
 
         if (_app != null)
         {
@@ -162,7 +164,7 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
 
         _runTask = null;
 
-        FireEvent(Stopped);
+        FireEvent(Stopped!);
     }
 
     /// <summary>
@@ -237,9 +239,9 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
         {
             string requestId = Cuid.Generate();
 
-            FireEvent(HttpRequestReceived);
+            FireEvent(HttpRequestReceived!);
 
-            FireEvent(CreateContextStarted);
+            FireEvent(CreateContextStarted!);
             var bamRequest = new AspNetCoreBamRequest(httpContext);
             await bamRequest.ReadContentAsync();
 
@@ -248,13 +250,13 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
                 RequestType = RequestType.Http,
                 OutputStream = httpContext.Response.Body
             };
-            FireEvent(CreateContextComplete, new BamServerEventArgs(serverContext));
+            FireEvent(CreateContextComplete!, new BamServerEventArgs(serverContext));
 
             // Run initialization pipeline
-            FireEvent(InitializeContextStarted, new BamServerEventArgs(serverContext));
+            FireEvent(InitializeContextStarted!, new BamServerEventArgs(serverContext));
             BamServerEventArgs args = new BamServerEventArgs(serverContext);
             BamServerInitializationContext initialization = _pipeline.RunPipeline(serverContext, args);
-            FireEvent(InitializeContextComplete, new BamServerEventArgs(serverContext));
+            FireEvent(InitializeContextComplete!, new BamServerEventArgs(serverContext));
 
             // Handle response
             await WriteResponseAsync(httpContext, initialization, serverContext);
@@ -262,7 +264,7 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
         catch (Exception ex)
         {
             LastExceptionMessage = ex.Message;
-            FireEvent(RequestExceptionThrown, new ErrorEventArgs(ex));
+            FireEvent(RequestExceptionThrown!, new ErrorEventArgs(ex));
             try
             {
                 httpContext.Response.StatusCode = 500;

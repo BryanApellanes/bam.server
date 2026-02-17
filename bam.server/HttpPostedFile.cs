@@ -33,7 +33,7 @@ namespace Bam.Server
             HttpPostedFile file = new HttpPostedFile(request.ContentEncoding, GetBoundary(request), request.InputStream);
             foreach (string key in request.QueryString.Keys)
             {
-                file.QueryString.Add(key, request.QueryString[key]);
+                file.QueryString.Add(key, request.QueryString[key]!);
             }
             return file;
         }
@@ -59,7 +59,7 @@ namespace Bam.Server
         {
             get;
             private set;
-        }
+        } = null!;
 
         /// <summary>
         /// Gets or sets the full file path of the uploaded file.
@@ -68,7 +68,7 @@ namespace Bam.Server
         {
             get;
             internal set;
-        }
+        } = null!;
 
         /// <summary>
         /// Gets or sets the original file name from the multipart content disposition.
@@ -76,7 +76,7 @@ namespace Bam.Server
         public string FileName
         {
             get; set;
-        }
+        } = null!;
 
         /// <summary>
         /// Gets or sets the name of the form input field that submitted the file.
@@ -84,7 +84,7 @@ namespace Bam.Server
         public string FormInputName
         {
             get; set;
-        }
+        } = null!;
 
         /// <summary>
         /// Gets or sets the MIME content type of the uploaded file.
@@ -92,7 +92,7 @@ namespace Bam.Server
         public string ContentType
         {
             get; set;
-        }
+        } = null!;
 
         /// <summary>
         /// Reads the content disposition metadata (form input name, file name, and content type) from the input stream.
@@ -103,9 +103,9 @@ namespace Bam.Server
             string dispo = string.Empty;
             using (StreamReader sr = new StreamReader(copy))
             {
-                string discard = sr.ReadLine();
-                dispo = sr.ReadLine();
-                ContentType = sr.ReadLine().DelimitSplit(":")[1];
+                string discard = sr.ReadLine()!;
+                dispo = sr.ReadLine()!;
+                ContentType = sr.ReadLine()!.DelimitSplit(":")[1];
             }
             string[] meta = dispo.DelimitSplit(":")[1].DelimitSplit(";");
             FormInputName = meta[1].DelimitSplit("=")[1].TruncateFront(1).Truncate(1);

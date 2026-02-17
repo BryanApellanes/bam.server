@@ -44,7 +44,7 @@ public class AspNetCoreBamServerContext : IBamServerContext
     /// <summary>
     /// Gets or sets the BAM response to send back to the client.
     /// </summary>
-    public IBamResponse BamResponse { get; set; }
+    public IBamResponse BamResponse { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the output stream used for writing the response.
@@ -54,27 +54,27 @@ public class AspNetCoreBamServerContext : IBamServerContext
     /// <summary>
     /// Gets the server session state for the current request.
     /// </summary>
-    public IServerSessionState ServerSessionState { get; private set; }
+    public IServerSessionState ServerSessionState { get; private set; } = null!;
 
     /// <summary>
     /// Gets the actor (user/client) associated with the current request.
     /// </summary>
-    public IActor Actor { get; private set; }
+    public IActor Actor { get; private set; } = null!;
 
     /// <summary>
     /// Gets the authentication result for the current request.
     /// </summary>
-    public BamAuthentication Authentication { get; private set; }
+    public BamAuthentication Authentication { get; private set; } = null!;
 
     /// <summary>
     /// Gets the command being executed in the current request.
     /// </summary>
-    public ICommand Command { get; private set; }
+    public ICommand Command { get; private set; } = null!;
 
     /// <summary>
     /// Gets the authorization calculation result for the current request.
     /// </summary>
-    public IAuthorizationCalculation AuthorizationCalculation { get; private set; }
+    public IAuthorizationCalculation AuthorizationCalculation { get; private set; } = null!;
 
     /// <summary>
     /// Sets the server session state for the current request.
