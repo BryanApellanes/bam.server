@@ -93,6 +93,11 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
     public event EventHandler<BamServerEventArgs>? InitializeContextComplete;
 
     /// <summary>
+    /// Optional callback to configure additional routes before the catch-all route is mapped.
+    /// </summary>
+    public Action<WebApplication>? ConfigureRoutes { get; set; }
+
+    /// <summary>
     /// Starts the web application server, binding to the configured host and port and beginning to accept requests.
     /// </summary>
     public void Start()
@@ -107,6 +112,7 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
                 var builder = WebApplication.CreateBuilder();
                 _app = builder.Build();
                 _app.Urls.Add(HttpHostBinding.ToString());
+                ConfigureRoutes?.Invoke(_app);
                 _app.Map("{**path}", HandleRequestAsync);
                 _runTask = _app.StartAsync(_cts.Token);
             }
