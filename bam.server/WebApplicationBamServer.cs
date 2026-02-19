@@ -18,6 +18,7 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
     private Task? _runTask;
     private CancellationTokenSource? _cts;
     private readonly BamRequestPipeline _pipeline;
+    private readonly List<Action<WebApplication>> _routeRegistrations = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WebApplicationBamServer"/> class with the specified options.
@@ -98,6 +99,18 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
     public Action<WebApplication>? ConfigureRoutes { get; set; }
 
     /// <summary>
+    /// Registers route handlers for a service type decorated with <see cref="RoutePrefixAttribute"/> and <see cref="RoutePathAttribute"/>.
+    /// Routes are mapped before the catch-all pipeline route, and all requests flow through the full BAM pipeline.
+    /// </summary>
+    /// <typeparam name="T">The service type to scan for route attributes.</typeparam>
+    /// <returns>This server instance for fluent chaining.</returns>
+    public WebApplicationBamServer AddRouteHandler<T>()
+    {
+        _routeRegistrations.Add(app => RouteHandlerRegistrar.RegisterRoutes<T>(this, app));
+        return this;
+    }
+
+    /// <summary>
     /// Starts the web application server, binding to the configured host and port and beginning to accept requests.
     /// </summary>
     public void Start()
@@ -113,6 +126,10 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
                 _app = builder.Build();
                 _app.Urls.Add(HttpHostBinding.ToString());
                 ConfigureRoutes?.Invoke(_app);
+                foreach (var registration in _routeRegistrations)
+                {
+                    registration(_app);
+                }
                 _app.Map("{**path}", HandleRequestAsync);
                 _runTask = _app.StartAsync(_cts.Token);
             }
@@ -239,7 +256,13 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
         this.CheckRequiredProperties();
     }
 
-    private async Task HandleRequestAsync(HttpContext httpContext)
+    private Task HandleRequestAsync(HttpContext httpContext)
+        => ExecutePipelineAsync(httpContext);
+
+    internal Task HandlePipelineRequestAsync(HttpContext httpContext, string synthesizedBody)
+        => ExecutePipelineAsync(httpContext, synthesizedBody);
+
+    private async Task ExecutePipelineAsync(HttpContext httpContext, string? contentOverride = null)
     {
         try
         {
@@ -249,7 +272,14 @@ public class WebApplicationBamServer : Loggable, IAsyncManagedServer, IConfigura
 
             FireEvent(CreateContextStarted!);
             var bamRequest = new AspNetCoreBamRequest(httpContext);
-            await bamRequest.ReadContentAsync();
+            if (contentOverride != null)
+            {
+                bamRequest.Content = contentOverride;
+            }
+            else
+            {
+                await bamRequest.ReadContentAsync();
+            }
 
             var serverContext = new AspNetCoreBamServerContext(requestId, bamRequest)
             {
