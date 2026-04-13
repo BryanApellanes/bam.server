@@ -1,8 +1,7 @@
 ﻿using Bam.Protocol.Server;
-using Bam.Server;
 using Microsoft.AspNetCore.Builder;
 
-namespace Bam.Net
+namespace Bam.Server
 {
     /// <summary>
     /// Provides static methods for creating and managing BAM server instances, including named servers
